@@ -2,6 +2,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <chrono>
 
 #include "rapidjson/document.h"
 #include "rapidjson/stringbuffer.h"
@@ -44,6 +45,58 @@ public:
                     "tmpStartTime": "",
                     "tmpEndTime": ""
         })";
+    void reserve(){
+    int target_weekday[] = {2, 3, 6};
+    constexpr int target_hour = 8;
+
+    // 获取当前时间
+    auto now = std::chrono::system_clock::now();
+    std::time_t now_time = std::chrono::system_clock::to_time_t(now);
+    std::tm* now_tm = std::localtime(&now_time);
+
+    // 计算下一个目标时间点
+    int days_until_target = -1;
+    while (true) {
+        int current_weekday = now_tm->tm_wday;
+        int current_hour = now_tm->tm_hour;
+
+        bool is_target_time = false;
+        for (int i = 0; i < 3; ++i) {
+            if (current_weekday == target_weekday[i] && current_hour == target_hour) {
+                is_target_time = true;
+                break;
+            }
+        }
+
+        if (is_target_time) {
+            // 执行任务
+            task();
+
+            // 等待一分钟
+            std::this_thread::sleep_for(std::chrono::minutes(1));
+        } else {
+            // 计算下一个目标时间点距离当前时间的天数
+            for(int i = 0; i < target_day.size(); ++i){
+                if (day >= target_day[i])
+            }
+            days_until_target = target_weekday[0] - current_weekday;
+            if (days_until_target <= 0) {
+                days_until_target += 7;
+            }
+
+            // 等待到下一个目标时间点
+            auto next_target_time = now + std::chrono::hours(24 * days_until_target)
+                                    + std::chrono::hours(target_hour);
+            now = std::chrono::system_clock::now();
+            std::this_thread::sleep_until(next_target_time);
+        }
+
+        // 更新当前时间
+        now = std::chrono::system_clock::now();
+        now_time = std::chrono::system_clock::to_time_t(now);
+        now_tm = std::localtime(&now_time);
+    }
+    }
 }
 }
 ;
