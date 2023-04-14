@@ -10,7 +10,11 @@
 #include "event2/event.h"
 #include "event2/listener.h"
 
+#include "utility.h"
+#include "unistd.h"
+
 #include <iostream>
+#include <sstream>
 
 class WebServer {
     sockaddr_in addr_;
@@ -23,8 +27,10 @@ private:
     static void beventCB(bufferevent* bev, short what, void* ctx);
 
 public:
-    WebServer(int port);
+    WebServer(int port = 80);
+    ~WebServer();
     void setEventBase(event_base* base);
     void initListenerAndBind();
-    bufferevent* connectSrv(const sockaddr_in addr);
+    bufferevent* connectSrv(std::string host, int port = 80);
+    void sendHttpReq(bufferevent* bev, std::string method, std::string path, std::string header, std::string content);
 };

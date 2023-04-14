@@ -7,16 +7,7 @@
 #include "web_server.h"
 
 int main(int argc, char** argv) {
-    if(argc != 2) {
-        std::cerr << "Please Input Port!" << std::endl;
-    }
-
     event_base* base;
-
-#ifdef WIN32s
-    WSADATA wsa_data;
-    WSAStartup(0x0201, &wsa_data);
-#endif
 
     base = event_base_new();
     if(!base) {
@@ -24,5 +15,11 @@ int main(int argc, char** argv) {
         exit(1);
     }
 
-    WebServer web_srv(atoi(argv[1]));
+    WebServer web_srv;
+    AutoReserve auto_rsv;
+    auto_rsv.initWebSrvPtr(&web_srv);
+    auto_rsv.reserve();
+    event_base_dispatch(base);
+
+    event_base_free(base);
 }
