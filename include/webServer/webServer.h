@@ -10,28 +10,26 @@
 #include "event2/event.h"
 #include "event2/listener.h"
 
+#include "http/httpConn.h"
 #include "utility.h"
-#include "unistd.h"
 
-#include <iostream>
-#include <sstream>
+#include <unistd.h>
+#include <unordered_map>
 
 class WebServer {
     sockaddr_in addr_;
     event_base* base_;
     evconnlistener* listener_;
 
-private:
-    static void readCB(bufferevent* bev, void* ctx);
-    static void beventCB(bufferevent* bev, short what, void* ctx);
+    std::unordered_map<int, httpConn> users_;
 
 public:
     WebServer(int port = 80);
     ~WebServer();
-    void setEventBase(event_base* base);
-    void initListenerAndBind();
+
     bufferevent* connectSrv(std::string host, int port = 80);
     void sendHttpReq(bufferevent* bev, std::string method, std::string path, std::string header, std::string content);
 
     friend void listenCB(evconnlistener* listener, evutil_socket_t fd, sockaddr* sa, int socklen, void* usr_data);
+    friend void readCB(bufferevent* bev, void* ctx) friend void beventCB(bufferevent* bev, short what, void* ctx);
 };

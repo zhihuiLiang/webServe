@@ -5,14 +5,14 @@
 #include <ctime>
 #include <iomanip>
 #include <iostream>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <thread>
 #include <vector>
-#include <memory>
 
 #include "utility.h"
-#include "web_server.h"
+#include "webServer/webServer.h"
 
 class AutoReserve {
     const std::vector<std::string> ground_id_ = { "1298272433186332673", "1297443858304540673", "1298272615009411073",
@@ -30,13 +30,19 @@ class AutoReserve {
     std::stringstream header_;
 
     WebServer* srv_ptr_;
+
 public:
     AutoReserve() {
-        header_ << "Host: " << "reservation.ruichengyunqin.com\r\n";
-        header_ << "User-Agent: " << "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36 NetType/WIFI MicroMessenger/7.0.20.1781(0x6700143B) WindowsWechat(0x63060012)\r\n";
-        header_ << "Accept-Encoding: " << "gzip, deflate\r\n";
-        //header_ << "Accept: " << "*/*\r\n";
-        header_ << "Content-Type: " << "application/json\r\n";
+        header_ << "Host: "
+                << "reservation.ruichengyunqin.com\r\n";
+        header_ << "User-Agent: "
+                << "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 "
+                   "Safari/537.36 NetType/WIFI MicroMessenger/7.0.20.1781(0x6700143B) WindowsWechat(0x63060012)\r\n";
+        header_ << "Accept-Encoding: "
+                << "gzip, deflate\r\n";
+        // header_ << "Accept: " << "*/*\r\n";
+        header_ << "Content-Type: "
+                << "application/json\r\n";
 
         const char* data = R"xx({
             "customerId": "1427570050142879746",
@@ -63,7 +69,7 @@ public:
         checkJson(data_d_);
     }
 
-    void initWebSrvPtr(WebServer* srv_ptr){
+    void initWebSrvPtr(WebServer* srv_ptr) {
         srv_ptr_ = srv_ptr;
     }
     void reserve() {
@@ -128,7 +134,7 @@ public:
 
             int n_ground = ground_id_.size();
             std::vector<std::string> contents(n_ground);
-            for (int i = 0; i < n_ground; ++i){
+            for(int i = 0; i < n_ground; ++i) {
                 std::string ground_name = std::to_string(order_[i]) + "号场";
                 modifyDoc(data_d_, "groundName", ground_name.c_str());
                 modifyDoc(data_d_, "groundId", ground_id_[order_[i]].c_str());
@@ -143,8 +149,9 @@ public:
             now_time = std::chrono::system_clock::to_time_t(now);
             now_tm = std::localtime(&now_time);
             std::string url = "http://reservation.ruichengyunqin.com/api/blade-app/qywx/saveOrder?userid=12132276";
-            while(now_tm->tm_hour != target_hour_ && now_tm->tm_sec != 0);
-            for (int i = 0; i < n_ground; ++i){
+            while(now_tm->tm_hour != target_hour_ && now_tm->tm_sec != 0)
+                ;
+            for(int i = 0; i < n_ground; ++i) {
                 srv_ptr_->sendHttpReq(bev, "POST", url, header_.str(), contents[i]);
             }
             bufferevent_free(bev);
