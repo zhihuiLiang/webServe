@@ -1,6 +1,6 @@
 #include "http/httpConn.h"
 
-
-httpConn::httpConn(int fd, const sockaddr_in& addr){
-    
+void httpConn::init(int fd, sockaddr_in* addr) {
+    fd_ = fd;
+    addr_ = *addr;
 }

@@ -21,6 +21,7 @@ class WebServer {
     event_base* base_;
     evconnlistener* listener_;
 
+    static int user_cnt_;
     std::unordered_map<int, httpConn> users_;
 
 public:
@@ -31,5 +32,6 @@ public:
     void sendHttpReq(bufferevent* bev, std::string method, std::string path, std::string header, std::string content);
 
     friend void listenCB(evconnlistener* listener, evutil_socket_t fd, sockaddr* sa, int socklen, void* usr_data);
-    friend void readCB(bufferevent* bev, void* ctx) friend void beventCB(bufferevent* bev, short what, void* ctx);
+    friend void readCB(bufferevent* bev, void* ctx);
+    friend void beventCB(bufferevent* bev, short what, void* ctx);
 };

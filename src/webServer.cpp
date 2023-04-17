@@ -1,9 +1,48 @@
 #include "webServer/webServer.h"
 #include "log/log.h"
 
-WebServer::WebServer(int port) : base_(nullptr) {
-    using std::placeholders;
+int WebServer::user_cnt_ = 0;
 
+void beventCB(bufferevent* bev, short what, void* ctx) {
+    if(what & BEV_EVENT_EOF) {  // 客户端关闭
+        LOG_INFO("connet closed\n");
+        bufferevent_free(bev);
+    } else if(what & BEV_EVENT_ERROR) {
+        printf("closed error\n");
+        bufferevent_free(bev);
+    } else if(what & BEV_EVENT_CONNECTED) {  // 连接成功
+        printf("connect ok\n");
+    }
+}
+
+void readCB(bufferevent* bev, void* ctx) {
+    char bufline[256];
+    int ret = 0;
+    while((ret = bufferevent_read(bev, bufline, sizeof(bufline))) > 0) {
+        write(STDOUT_FILENO, bufline, ret);
+    }
+    bufferevent_free(bev);
+}
+
+void listenCB(evconnlistener* listener, evutil_socket_t fd, sockaddr* sa, int socklen, void* usr_data) {
+    WebServer* srv = reinterpret_cast<WebServer*>(usr_data);
+    ++WebServer::user_cnt_;
+    srv->users_[fd].init(fd, reinterpret_cast<sockaddr_in*>(sa));
+    char ip[16] = { 0 };
+    inet_ntop(AF_INET, reinterpret_cast<void*>(sa), ip, sizeof(sockaddr));
+    LOG_INFO("IP: %s, Client[%d] log try to connect.", ip, fd);
+
+    bufferevent* bev = bufferevent_socket_new(srv->base_, fd, BEV_OPT_CLOSE_ON_FREE);
+    if(!bev) {
+        LOG_ERROR("Listener create buffer event failed!");
+        event_base_loopbreak(srv->base_);
+        exit(1);
+    }
+    bufferevent_setcb(bev, readCB, nullptr, beventCB, nullptr);
+    bufferevent_enable(bev, EV_READ | EV_WRITE);
+}
+
+WebServer::WebServer(int port) : base_(nullptr) {
     event_base* base;
     base_ = event_base_new();
 
@@ -11,7 +50,7 @@ WebServer::WebServer(int port) : base_(nullptr) {
     addr_.sin_port = htons(port);
     addr_.sin_addr.s_addr = INADDR_ANY;
 
-    listener_ = evconnlistener_new_bind(base_, , (void*)base_, LEV_OPT_REUSEABLE | LEV_OPT_CLOSE_ON_FREE, -1,
+    listener_ = evconnlistener_new_bind(base_, listenCB, this, LEV_OPT_REUSEABLE | LEV_OPT_CLOSE_ON_FREE, -1,
                                         reinterpret_cast<sockaddr*>(&addr_), sizeof(addr_));
     if(!listener_) {
         LOG_ERROR("Create lisener failed");
@@ -20,7 +59,6 @@ WebServer::WebServer(int port) : base_(nullptr) {
 
     event_base_dispatch(base);
 }
-
 
 bufferevent* WebServer::connectSrv(std::string host, int port) {
     sockaddr_in srv_addr;
@@ -37,68 +75,7 @@ bufferevent* WebServer::connectSrv(std::string host, int port) {
     return bev;
 }
 
-void WebServer::sendHttpReq(bufferevent* bev, std::string method, std::string path, std::string header, std::string content) {
-    std::stringstream stream;
-    stream << method << " " << path << " HTTP/1.1\r\n";
-    stream << "Content-Length: " << content.size() << "\r\n";
-    stream << header << "\r\n";
-    stream << content.c_str();
-    bufferevent_write(bev, stream.str().c_str(), stream.str().size());
-}
-
-void WebServer::listenCB(evconnlistener* listener, evutil_socket_t fd, sockaddr* sa, int socklen, void* usr_data) {
-    event_base* base = reinterpret_cast<event_base*>(usr_data);
-
-    bufferevent* bev = bufferevent_socket_new(base, fd, BEV_OPT_CLOSE_ON_FREE);
-    if(!bev) {
-        LOG_ERROR("Listener create buffer event failed!");
-        event_base_loopbreak(base);
-        exit(1);
-    }
-    bufferevent_setcb(bev, readCB, NULL, beventCB, base);
-    bufferevent_enable(bev, EV_READ | EV_WRITE);
-}
-
-void WebServer::readCB(bufferevent* bev, void* ctx) {
-    char bufline[256];
-    int ret = 0;
-    while((ret = bufferevent_read(bev, bufline, sizeof(bufline))) > 0) {
-        write(STDOUT_FILENO, bufline, ret);
-    }
-    bufferevent_free(bev);
-}
-
 WebServer::~WebServer() {
     evconnlistener_free(listener_);
     event_base_free(base_);
-}
-
-void listenCB(evconnlistener* listener, evutil_socket_t fd, sockaddr* sa, int socklen, void* usr_data) {
-    WebServe* srv = reinterpret_cast<WebServer*>(usr_data);
-    ++WebServer::http_cnt_;
-    srv->users_[fd].init(fd, reinterpret_cast<sockaddr_in*>(sa));
-    char* ip[16] = 0;
-    inet_ntop(AF_INET, reinterpret_cast<void*>(ip), sa, sizeof(sockaddr));
-    LOG_INFO("IP: %s, Client[%d] log try to connect.", ip, fd);
-
-    bufferevent* bev = bufferevent_socket_new(srv->base_, fd, BEV_OPT_CLOSE_ON_FREE);
-    if(!bev) {
-        LOG_ERROR("Listener create buffer event failed!");
-        event_base_loopbreak(base);
-        exit(1);
-    }
-    bufferevent_setcb(bev, readCB, NULL, beventCB, base);
-    bufferevent_enable(bev, EV_READ | EV_WRITE);
-}
-
-void WebServer::beventCB(bufferevent* bev, short what, void* ctx) {
-    if(what & BEV_EVENT_EOF) {  // 客户端关闭
-        LOG_INFO("connet closed\n");
-        bufferevent_free(bev);
-    } else if(what & BEV_EVENT_ERROR) {
-        printf("closed error\n");
-        bufferevent_free(bev);
-    } else if(what & BEV_EVENT_CONNECTED) {  // 连接成功
-        printf("connect ok\n");
-    }
 }
