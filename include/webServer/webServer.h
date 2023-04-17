@@ -22,7 +22,6 @@ class WebServer {
     evconnlistener* listener_;
 
 private:
-    static void listenCB(evconnlistener* listener, evutil_socket_t fd, sockaddr* sa, int socklen, void* usr_data);
     static void readCB(bufferevent* bev, void* ctx);
     static void beventCB(bufferevent* bev, short what, void* ctx);
 
@@ -33,4 +32,6 @@ public:
     void initListenerAndBind();
     bufferevent* connectSrv(std::string host, int port = 80);
     void sendHttpReq(bufferevent* bev, std::string method, std::string path, std::string header, std::string content);
+
+    friend void listenCB(evconnlistener* listener, evutil_socket_t fd, sockaddr* sa, int socklen, void* usr_data);
 };
