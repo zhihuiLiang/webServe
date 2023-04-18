@@ -1,11 +1,9 @@
 #include <iostream>
 
-#include "event2/event.h"
-#include "event2/listener.h"
-
 #include "webServer/webServer.h"
+#include "log/log.h"
 
 int main(int argc, char** argv) {
-
+    WebServer web_srv(1600);
     return 0;
 }

@@ -16,21 +16,15 @@ void beventCB(bufferevent* bev, short what, void* ctx) {
 }
 
 void readCB(bufferevent* bev, void* ctx) {
-    char bufline[256];
-    int ret = 0;
-    while((ret = bufferevent_read(bev, bufline, sizeof(bufline))) > 0) {
-        write(STDOUT_FILENO, bufline, ret);
-    }
-    bufferevent_free(bev);
+    auto client = reinterpret_cast<HttpConn*>(ctx);
+    auto input = bufferevent_get_input(bev);
+    client->processReq(input);
+    
 }
 
 void listenCB(evconnlistener* listener, evutil_socket_t fd, sockaddr* sa, int socklen, void* usr_data) {
     WebServer* srv = reinterpret_cast<WebServer*>(usr_data);
     ++WebServer::user_cnt_;
-    srv->users_[fd].init(fd, reinterpret_cast<sockaddr_in*>(sa));
-    char ip[16] = { 0 };
-    inet_ntop(AF_INET, reinterpret_cast<void*>(sa), ip, sizeof(sockaddr));
-    LOG_INFO("IP: %s, Client[%d] log try to connect.", ip, fd);
 
     bufferevent* bev = bufferevent_socket_new(srv->base_, fd, BEV_OPT_CLOSE_ON_FREE);
     if(!bev) {
@@ -38,12 +32,18 @@ void listenCB(evconnlistener* listener, evutil_socket_t fd, sockaddr* sa, int so
         event_base_loopbreak(srv->base_);
         exit(1);
     }
-    bufferevent_setcb(bev, readCB, nullptr, beventCB, nullptr);
+    srv->users_[fd].init(fd, bev, reinterpret_cast<sockaddr_in*>(sa));
+    char ip[16] = { 0 };
+    inet_ntop(AF_INET, reinterpret_cast<void*>(sa), ip, sizeof(sockaddr));
+    LOG_INFO("IP: %s, Client[%d] log try to connect.", ip, fd);
+
+    bufferevent_setcb(bev, readCB, NULL, beventCB, &(srv->users_[fd]));
     bufferevent_enable(bev, EV_READ | EV_WRITE);
 }
 
 WebServer::WebServer(int port) : base_(nullptr) {
-    event_base* base;
+    Log::Instance()->init(1, "./log", ".log", 0, true);
+
     base_ = event_base_new();
 
     addr_.sin_family = AF_INET;
@@ -53,11 +53,11 @@ WebServer::WebServer(int port) : base_(nullptr) {
     listener_ = evconnlistener_new_bind(base_, listenCB, this, LEV_OPT_REUSEABLE | LEV_OPT_CLOSE_ON_FREE, -1,
                                         reinterpret_cast<sockaddr*>(&addr_), sizeof(addr_));
     if(!listener_) {
-        LOG_ERROR("Create lisener failed");
+        LOG_ERROR("Create lisener failed:%s", strerror(errno));
         exit(1);
     }
 
-    event_base_dispatch(base);
+    event_base_dispatch(base_);
 }
 
 bufferevent* WebServer::connectSrv(std::string host, int port) {

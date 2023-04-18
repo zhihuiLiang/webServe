@@ -5,6 +5,6 @@
 
 #include <iostream>
 
-extern void checkJson(const rapidjson::Document& doc);
-extern void modifyDoc(rapidjson::Document& doc, const char* key, const char* val);
-extern void modifyDoc(rapidjson::Document& doc, const char* key, int val);
+extern bool checkJson(const rapidjson::Document& doc);
+extern bool modifyDoc(rapidjson::Document& doc, const char* key, const char* val);
+extern bool modifyDoc(rapidjson::Document& doc, const char* key, int val);

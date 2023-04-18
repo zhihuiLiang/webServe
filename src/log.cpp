@@ -42,7 +42,7 @@ void Log::SetLevel(int level) {
 }
 
 void Log::init(int level = 1, const char* path, const char* suffix,
-    int maxQueueSize) {
+    int maxQueueSize, bool debugView) {
     isOpen_ = true;
     level_ = level;
     if(maxQueueSize > 0) {
@@ -78,11 +78,16 @@ void Log::init(int level = 1, const char* path, const char* suffix,
             fclose(fp_); 
         }
 
-        fp_ = fopen(fileName, "a");
-        if(fp_ == nullptr) {
-            mkdir(path_, 0777);
+        if (!debugView){
             fp_ = fopen(fileName, "a");
-        } 
+            if(fp_ == nullptr) {
+                mkdir(path_, 0777);
+                fp_ = fopen(fileName, "a");
+            } 
+        }else{
+            fp_ = stdout;
+        }
+
         assert(fp_ != nullptr);
     }
 }

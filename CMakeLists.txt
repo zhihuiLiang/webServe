@@ -10,7 +10,8 @@ set(SOURCE
     src/utility.cpp 
     src/log.cpp
     src/buffer.cpp
-    src/httpConn.cpp
+    src/http/httpConn.cpp
+    src/http/httpRequest.cpp
 )
 
 include_directories(

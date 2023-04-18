@@ -6,9 +6,10 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 
-#include "event2/bufferevent.h"
-#include "event2/event.h"
-#include "event2/listener.h"
+#include <event2/listener.h>
+#include <event2/event.h>
+#include <event2/buffer.h>
+#include <event2/bufferevent.h>
 
 #include "http/httpConn.h"
 #include "utility.h"
@@ -22,7 +23,7 @@ class WebServer {
     evconnlistener* listener_;
 
     static int user_cnt_;
-    std::unordered_map<int, httpConn> users_;
+    std::unordered_map<int, HttpConn> users_;
 
 public:
     WebServer(int port = 80);
