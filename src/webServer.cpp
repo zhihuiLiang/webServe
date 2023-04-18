@@ -19,7 +19,6 @@ void readCB(bufferevent* bev, void* ctx) {
     auto client = reinterpret_cast<HttpConn*>(ctx);
     auto input = bufferevent_get_input(bev);
     client->processReq(input);
-    
 }
 
 void listenCB(evconnlistener* listener, evutil_socket_t fd, sockaddr* sa, int socklen, void* usr_data) {

@@ -5,17 +5,12 @@
 #include <event2/bufferevent.h>
 
 #include <string>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
-class HttpRequest{
+class HttpRequest {
 public:
-    enum PARASE_STATE{
-        REQUEST_LINE,
-        HEADER,
-        BODY,
-        FINISH
-    };
+    enum PARASE_STATE { REQUEST_LINE, HEADER, BODY, FINISH };
 
     enum HTTP_CODE {
         NO_REQUEST = 0,
@@ -33,8 +28,8 @@ public:
 
 private:
     bool paraseReqLine(std::string line);
-    bool paraseHeader(std::string line);
-    bool paraseBody(std::string line);
+    void paraseHeader(std::string line);
+    void paraseBody(std::string line);
 
     void parasePath();
 
