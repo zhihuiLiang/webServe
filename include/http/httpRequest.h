@@ -25,20 +25,26 @@ public:
 
     void init();
     bool parase(evbuffer* buffer);
+    void paraseFromUrlencoded();
+    int converHex(char ch);
+
+    bool userVerify(std::string name, std::string pwd, bool is_login);
 
 private:
     bool paraseReqLine(std::string line);
     void paraseHeader(std::string line);
-    void paraseBody(std::string line);
+    void paraseBody(const char* data, size_t len);
 
     void parasePath();
 
     PARASE_STATE state_;
 
-    std::string method_, path_, version_;
+    std::unordered_map<std::string, std::string> post_;
+    std::string method_, path_, version_, body_;
     rapidjson::Document header_;
 
     static std::vector<std::string> AVILIBLE_HTML;
+    static const std::unordered_map<std::string, int> DEFAULT_HTML_TAG;
 
     friend class HttpConn;
 };

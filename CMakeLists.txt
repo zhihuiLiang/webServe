@@ -13,10 +13,15 @@ set(SOURCE
     src/http/httpConn.cpp
     src/http/httpRequest.cpp
     src/http/httpResponse.cpp
+    src/sqlconnpool.cpp
 )
+
+set(MYSQL_DIR $ENV{MYSQL_PATH})
+message("mysql path:" ${MYSQL_DIR})
 
 include_directories(
     INCLUDE_DIRS 
+    ${MYSQP_DIR}/include
     include
 )
 
