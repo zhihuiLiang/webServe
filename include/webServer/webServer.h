@@ -22,7 +22,7 @@ class WebServer {
     event_base* base_;
     evconnlistener* listener_;
 
-    static int user_cnt_;
+    char* src_dir_;
     std::unordered_map<int, HttpConn> users_;
 
 public:

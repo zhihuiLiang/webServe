@@ -36,7 +36,9 @@ private:
     PARASE_STATE state_;
 
     std::string method_, path_, version_;
-    rapidjson::Document head_;
+    rapidjson::Document header_;
 
     static std::vector<std::string> AVILIBLE_HTML;
+
+    friend class HttpConn;
 };

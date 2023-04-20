@@ -1,14 +1,15 @@
 #include "webServer/webServer.h"
 #include "log/log.h"
 
-int WebServer::user_cnt_ = 0;
-
 void beventCB(bufferevent* bev, short what, void* ctx) {
+    HttpConn* client = reinterpret_cast<HttpConn*>(ctx);
+    char ip[16] = {0};
+
     if(what & BEV_EVENT_EOF) {  // 客户端关闭
-        LOG_INFO("connet closed\n");
+        LOG_INFO("IP: %s, connet closed", client->getIP());
         bufferevent_free(bev);
     } else if(what & BEV_EVENT_ERROR) {
-        printf("closed error\n");
+        LOG_INFO("IP: %s, connet closed error", client->getIP());
         bufferevent_free(bev);
     } else if(what & BEV_EVENT_CONNECTED) {  // 连接成功
         printf("connect ok\n");
@@ -17,13 +18,12 @@ void beventCB(bufferevent* bev, short what, void* ctx) {
 
 void readCB(bufferevent* bev, void* ctx) {
     auto client = reinterpret_cast<HttpConn*>(ctx);
-    auto input = bufferevent_get_input(bev);
-    client->processReq(input);
+    client->processReq();
 }
 
 void listenCB(evconnlistener* listener, evutil_socket_t fd, sockaddr* sa, int socklen, void* usr_data) {
     WebServer* srv = reinterpret_cast<WebServer*>(usr_data);
-    ++WebServer::user_cnt_;
+    ++HttpConn::user_cnt_;
 
     bufferevent* bev = bufferevent_socket_new(srv->base_, fd, BEV_OPT_CLOSE_ON_FREE);
     if(!bev) {
@@ -31,9 +31,9 @@ void listenCB(evconnlistener* listener, evutil_socket_t fd, sockaddr* sa, int so
         event_base_loopbreak(srv->base_);
         exit(1);
     }
-    srv->users_[fd].init(fd, bev, reinterpret_cast<sockaddr_in*>(sa));
     char ip[16] = { 0 };
     inet_ntop(AF_INET, reinterpret_cast<void*>(sa), ip, sizeof(sockaddr));
+    srv->users_[fd].init(fd, bev, ip);
     LOG_INFO("IP: %s, Client[%d] log try to connect.", ip, fd);
 
     bufferevent_setcb(bev, readCB, NULL, beventCB, &(srv->users_[fd]));
@@ -41,6 +41,11 @@ void listenCB(evconnlistener* listener, evutil_socket_t fd, sockaddr* sa, int so
 }
 
 WebServer::WebServer(int port) : base_(nullptr) {
+    src_dir_ = getcwd(nullptr, 256);
+    assert(src_dir_);
+    strncat(src_dir_, "/resources/", 16);
+    HttpConn::src_dir_ = src_dir_;
+
     Log::Instance()->init(1, "./log", ".log", 0, true);
 
     base_ = event_base_new();

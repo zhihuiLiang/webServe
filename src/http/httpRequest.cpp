@@ -7,7 +7,10 @@ std::vector<std::string> HttpRequest::AVILIBLE_HTML = { "/index", "/register", "
 
 void HttpRequest::init() {
     method_ = path_ = version_ = "";
-    head_.Clear();
+
+    header_.SetNull(); // 把根节点设为 null JSON 类型
+    header_.GetAllocator().Clear(); // 清空 allocator 
+    
     state_ = PARASE_STATE::REQUEST_LINE;
 }
 
@@ -15,7 +18,7 @@ bool HttpRequest::parase(evbuffer* buf) {
     while(state_ != PARASE_STATE::FINISH) {
         size_t len = 0;
         char* line = evbuffer_readln(buf, &len, EVBUFFER_EOL_CRLF);
-
+    
         int remain_size = 0;
         switch(state_) {
             case REQUEST_LINE:
@@ -30,6 +33,7 @@ bool HttpRequest::parase(evbuffer* buf) {
                     state_ = FINISH;
                 }
             case BODY:
+                state_ = FINISH;
                 break;
             default:
                 break;
@@ -69,7 +73,8 @@ void HttpRequest::paraseHeader(std::string line) {
     std::regex patten("^([^:]) ?(.*)$");
     std::smatch sub_match;
     if(std::regex_match(line, sub_match, patten)) {
-        // modifyDoc(std::string(sub_match[0]).c_str(), std::string(sub_match[1]).c_str());
+        std::string key = sub_match[0], val = sub_match[1];
+        modifyDoc(header_, key.c_str(), val.c_str());
     } else {
         state_ = BODY;
     }

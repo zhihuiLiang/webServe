@@ -12,6 +12,7 @@ set(SOURCE
     src/buffer.cpp
     src/http/httpConn.cpp
     src/http/httpRequest.cpp
+    src/http/httpResponse.cpp
 )
 
 include_directories(
