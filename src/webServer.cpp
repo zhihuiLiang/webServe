@@ -1,6 +1,12 @@
 #include "webServer/webServer.h"
 #include "log/log.h"
 
+#include <future>
+#include <chrono>
+#include <thread>
+
+using namespace std::literals;
+
 void beventCB(bufferevent* bev, short what, void* ctx) {
     HttpConn* client = reinterpret_cast<HttpConn*>(ctx);
     char ip[16] = {0};
@@ -20,6 +26,19 @@ void readCB(bufferevent* bev, void* ctx) {
     auto client = reinterpret_cast<HttpConn*>(ctx);
     client->processReq();
 }
+
+void conSrvCB(bufferevent* bev, void* ctx){
+    auto client = reinterpret_cast<HttpConn*>(ctx);
+    size_t len = 0;
+    evbuffer* buf = bufferevent_get_input(bev);
+    char *line = evbuffer_readln(buf, &len, EVBUFFER_EOL_CRLF);
+    while(len > 0){
+        std::string recv_line(line);
+        LOG_INFO("Receive IP: %s response: %s", client->getIP(), line);
+        line = evbuffer_readln(buf, &len, EVBUFFER_EOL_CRLF);
+    }
+}
+
 
 void listenCB(evconnlistener* listener, evutil_socket_t fd, sockaddr* sa, int socklen, void* usr_data) {
     WebServer* srv = reinterpret_cast<WebServer*>(usr_data);
@@ -43,10 +62,10 @@ void listenCB(evconnlistener* listener, evutil_socket_t fd, sockaddr* sa, int so
 WebServer::WebServer(int port) : base_(nullptr) {
     src_dir_ = getcwd(nullptr, 256);
     assert(src_dir_);
-    strncat(src_dir_, "/resources/", 16);
+    strncat(src_dir_, "/resource", 16);
     HttpConn::src_dir_ = src_dir_;
 
-    Log::Instance()->init(1, "./log", ".log", 0, true);
+    Log::Instance()->init(1, "./log", ".log", 0);
 
     base_ = event_base_new();
 
@@ -61,10 +80,11 @@ WebServer::WebServer(int port) : base_(nullptr) {
         exit(1);
     }
 
+    auto fut = std::async(&WebServer::addTask, this);
     event_base_dispatch(base_);
 }
 
-bufferevent* WebServer::connectSrv(std::string host, int port) {
+int WebServer::connectSrv(std::string host, int port) {
     sockaddr_in srv_addr;
     srv_addr.sin_family = AF_INET;
     srv_addr.sin_port = htons(port);
@@ -72,11 +92,39 @@ bufferevent* WebServer::connectSrv(std::string host, int port) {
     bufferevent* bev = bufferevent_socket_new(base_, -1, BEV_OPT_CLOSE_ON_FREE);
     int ret = bufferevent_socket_connect(bev, reinterpret_cast<sockaddr*>(&srv_addr), sizeof(srv_addr));
     if(ret < -1) {
-        LOG_ERROR("connect other serve failed!");
+        LOG_ERROR("connect other server failed!");
     }
-    bufferevent_setcb(bev, readCB, NULL, beventCB, NULL);
+    int fd = bufferevent_getfd(bev);
+    if (fd < 0){
+        LOG_ERROR("Get Connected fd failed!");
+    }
+    users_[fd].init(fd, bev, host.c_str());
+
+    bufferevent_setcb(bev, conSrvCB, NULL, beventCB, &users_[fd]);
     bufferevent_enable(bev, EV_READ | EV_WRITE);
-    return bev;
+    return fd;
+}
+
+void WebServer::addTask(){
+    AutoReserve task;  //ip 8.129.5.136
+    while(1){
+        auto target = task.getNextTime();
+        std::this_thread::sleep_until(target); 
+
+        const char* ip = "8.129.5.136";
+        auto fd = connectSrv(ip, 80);
+
+        auto [path, header, contents] = task.reserve(target);
+
+        int cnt = 2;
+        while(cnt--){
+            for (const auto& content : contents){
+                users_[fd].sendReq("POST", path, header, content);
+            }
+            std::this_thread::sleep_for(1s);
+        }
+    }
+
 }
 
 WebServer::~WebServer() {

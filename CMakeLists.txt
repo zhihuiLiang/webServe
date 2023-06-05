@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.1.2)
 project(web_server)
 
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_BUILD_TYPE Release)
 
 set(SOURCE 
     src/main.cpp 
@@ -14,16 +14,16 @@ set(SOURCE
     src/http/httpRequest.cpp
     src/http/httpResponse.cpp
     src/sqlconnpool.cpp
+    src/timeWheel.cpp
 )
 
-set(MYSQL_DIR $ENV{MYSQL_PATH})
-message("mysql path:" ${MYSQL_DIR})
+set(MYSQL_LIB mysqlclient mysqld mysqlservices)
 
 include_directories(
     INCLUDE_DIRS 
-    ${MYSQP_DIR}/include
     include
 )
 
 add_executable(webServer ${SOURCE})
-target_link_libraries(webServer event pthread)
+target_include_directories(webServer PRIVATE  $ENV{MY_SQL}/include)
+target_link_libraries(webServer event pthread ${MYSQL_LIB})

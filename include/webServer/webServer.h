@@ -12,7 +12,9 @@
 #include <event2/bufferevent.h>
 
 #include "http/httpConn.h"
+#include "timeWheel/timeWheel.h"
 #include "utility.h"
+#include "task/auto_reserve.hpp"
 
 #include <unistd.h>
 #include <unordered_map>
@@ -29,10 +31,12 @@ public:
     WebServer(int port = 80);
     ~WebServer();
 
-    bufferevent* connectSrv(std::string host, int port = 80);
-    void sendHttpReq(bufferevent* bev, std::string method, std::string path, std::string header, std::string content);
+    int connectSrv(std::string host, int port = 80);
+    void addTask();
 
     friend void listenCB(evconnlistener* listener, evutil_socket_t fd, sockaddr* sa, int socklen, void* usr_data);
     friend void readCB(bufferevent* bev, void* ctx);
     friend void beventCB(bufferevent* bev, short what, void* ctx);
+
+    
 };

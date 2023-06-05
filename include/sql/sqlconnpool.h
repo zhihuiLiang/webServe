@@ -1,7 +1,8 @@
 #ifndef SQLCONNPOOL_H
 #define SQLCONNPOOL_H
 
-#include "mysql/mysql.h"
+#include "mysql.h"
+
 #include <mutex>
 #include <queue>
 #include <semaphore.h>

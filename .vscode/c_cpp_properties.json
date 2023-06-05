@@ -3,7 +3,7 @@
         {
             "name": "Linux",
             "includePath": [
-                "/home/lzh/thirdLib/mysql-5.7.42-linux-glibc2.12-x86_64",
+                "/usr/local/mysql/include",
                 "${workspaceFolder}/include",
                 "${workspaceFolder}/**"
             ],

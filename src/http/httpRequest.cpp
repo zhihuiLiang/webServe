@@ -23,7 +23,6 @@ void HttpRequest::init() {
 bool HttpRequest::parase(evbuffer* buf) {
     while(state_ != PARASE_STATE::FINISH) {
         size_t len, remain_size = 0;
-        ;
         char *line, *body;
         if(state_ != BODY) {
             len = 0;
@@ -39,6 +38,7 @@ bool HttpRequest::parase(evbuffer* buf) {
                 parasePath();
                 break;
             case HEADER:
+                if (line <= 0) return false;
                 paraseHeader(line);
                 if((remain_size = evbuffer_get_length(buf)) < 2) {
                     state_ = FINISH;
@@ -55,7 +55,7 @@ bool HttpRequest::parase(evbuffer* buf) {
 }
 
 bool HttpRequest::paraseReqLine(std::string line) {
-    std::regex patten("^([^ ]) ([^ ]*) HTTP/([^ ])$");
+    std::regex patten("^([^ ]*) ([^ ]*) HTTP/([^ ]*)$");
     std::smatch sub_match;
     if(std::regex_match(line, sub_match, patten)) {
         method_ = sub_match[1];
@@ -228,4 +228,14 @@ bool HttpRequest::userVerify(std::string name, std::string pwd, bool is_login) {
     SqlConnPool::Instance()->FreeConn(sql);
     LOG_DEBUG("UserVerify success!!");
     return flag;
+}
+
+std::string HttpRequest::makeRequest(std::string method, std::string path, const std::string& header, const std::string& body){
+    std::string request;
+    request += method + " " + path + "  HTTP/1.1\r\n";  //Request Line
+    request += header;
+    request += ("Content-Length: " + std::to_string(body.size()) + "\r\n");
+    request += "\r\n";
+    request += body;
+    return request;
 }

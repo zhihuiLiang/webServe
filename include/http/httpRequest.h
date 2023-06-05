@@ -29,6 +29,7 @@ public:
     int converHex(char ch);
 
     bool userVerify(std::string name, std::string pwd, bool is_login);
+    std::string makeRequest(std::string method, std::string path, const std::string& header, const std::string& body);
 
 private:
     bool paraseReqLine(std::string line);

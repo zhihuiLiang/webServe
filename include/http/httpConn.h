@@ -8,6 +8,8 @@
 
 #include <arpa/inet.h>
 
+#include <atomic>
+
 class HttpConn {
     int fd_;
     bufferevent* bev_;
@@ -18,12 +20,15 @@ class HttpConn {
 
 public:
     HttpConn() = default;
-    void init(int fd, bufferevent* ev, char* ip);
+    void init(int fd, bufferevent* ev, const char* ip);
     void processReq();
+    void sendReq(std::string method, std::string path, const std::string& header, const std::string& body);
     int getFd();
     char* getIP();
 
     static const char* src_dir_;
     static int user_cnt_;
+
+    std::atomic<bool> task_finish;
 
 };
